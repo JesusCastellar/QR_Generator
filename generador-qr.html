@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Generador de QR + descarga HD</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;line-height:1.4;padding:18px;background:#f7f7fb;color:#111}
+    .card{background:white;padding:18px;border-radius:12px;box-shadow:0 6px 20px rgba(15,15,30,0.06);max-width:760px;margin:18px auto}
+    label{display:block;margin:10px 0 6px;font-weight:600}
+    input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd}
+    .row{display:flex;gap:10px;align-items:center}
+    button{padding:10px 14px;border-radius:8px;border:0;background:#0b78ff;color:white;cursor:pointer}
+    button.secondary{background:#666}
+    .preview{display:flex;gap:20px;align-items:center;margin-top:12px}
+    canvas{background:white;border:1px solid #eee;border-radius:8px}
+    .hint{color:#666;font-size:13px;margin-top:8px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Generador de QR con descarga en HD</h2>
+    <p class="hint">Escribe un enlace, genera el QR y descárgalo en alta resolución (PNG). Puedes elegir el tamaño de salida HD.</p>
+
+    <label for="text">Enlace o texto</label>
+    <input id="text" type="text" placeholder="https://ejemplo.com" value="https://example.com">
+
+    <div class="row" style="margin-top:10px">
+      <div style="flex:1">
+        <label for="size">Tamaño de vista previa (px)</label>
+        <input id="size" type="range" min="128" max="512" value="256">
+      </div>
+      <div style="width:130px;text-align:right">
+        <label>Modo</label>
+        <select id="mode">
+          <option value="png">PNG (HD)</option>
+          <option value="svg">SVG (vectorial)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="controls" style="margin-top:12px">
+      <button id="generate">Generar QR</button>
+      <button id="download" class="secondary">Descargar HD</button>
+      <button id="copy" class="secondary">Copiar imagen al portapapeles</button>
+    </div>
+
+    <div class="preview">
+      <div>
+        <label>Previsualización</label>
+        <canvas id="qr" width="256" height="256"></canvas>
+        <div class="hint">Resolución de previsualización actual: <span id="previewSize">256</span>×<span id="previewSize2">256</span> px</div>
+      </div>
+      <div style="flex:1">
+        <label>Información</label>
+        <div class="hint">Para descargar en alta definición, pulsa "Descargar HD". Esto renderiza un PNG a la resolución seleccionada (ej. 2048×2048) y lo descarga.</div>
+        <div style="margin-top:8px">
+          <label for="hdsize">Resolución HD (px)</label>
+          <input id="hdsize" type="number" min="512" max="4096" value="2048" style="width:140px;padding:8px;border-radius:6px;border:1px solid #ddd">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Librería ligera para generar QR en canvas -->
+  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+  <script>
+    const input = document.getElementById('text');
+    const sizeRange = document.getElementById('size');
+    const previewSizeSpan = document.getElementById('previewSize');
+    const previewSizeSpan2 = document.getElementById('previewSize2');
+    const canvas = document.getElementById('qr');
+    const generateBtn = document.getElementById('generate');
+    const downloadBtn = document.getElementById('download');
+    const copyBtn = document.getElementById('copy');
+    const hdSizeInput = document.getElementById('hdsize');
+    const modeSelect = document.getElementById('mode');
+
+    // Creamos un objeto QRious que renderiza en el canvas
+    const qr = new QRious({
+      element: canvas,
+      value: input.value,
+      size: parseInt(sizeRange.value,10),
+      background: 'white',
+      level: 'H' // nivel de corrección máximo
+    });
+
+    function updatePreviewSize(){
+      const s = parseInt(sizeRange.value,10);
+      canvas.width = s;
+      canvas.height = s;
+      qr.size = s;
+      previewSizeSpan.textContent = s;
+      previewSizeSpan2.textContent = s;
+    }
+
+    sizeRange.addEventListener('input', updatePreviewSize);
+
+    generateBtn.addEventListener('click', ()=>{
+      qr.value = input.value || '';
+      // Forzar re-render (QRious actualiza automáticamente cuando cambian properties)
+      updatePreviewSize();
+    });
+
+    // Descargar PNG en alta resolución
+    downloadBtn.addEventListener('click', async ()=>{
+      const text = input.value || '';
+      if(!text){
+        alert('Escribe primero un enlace o texto.');
+        return;
+      }
+
+      if(modeSelect.value === 'svg'){
+        // Generar SVG simple usando QRius -> convertir a imagen SVG construyendo un SVG con image href a un dataURL del canvas.
+        // Nota: QRious no exporta SVG nativo; si necesitas un SVG puro vectorial usa librerías dedicadas.
+        const tmp = document.createElement('canvas');
+        const hd = parseInt(hdSizeInput.value,10) || 2048;
+        tmp.width = hd;
+        tmp.height = hd;
+        const ctx = tmp.getContext('2d');
+        // Dibujar QR escalado
+        const img = new Image();
+        img.onload = ()=>{
+          // dibujamos la imagen del canvas original escalada al tamaño HD
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0,0,hd,hd);
+          ctx.drawImage(canvas, 0, 0, hd, hd);
+          // Construir SVG que embeddee el PNG resultante (vector no puro, pero escalable dentro de SVG)
+          const pngData = tmp.toDataURL('image/png');
+          const svg = `<?xml version="1.0" encoding="UTF-8"?>\n`+
+                      `<svg xmlns='http://www.w3.org/2000/svg' width='${hd}' height='${hd}' viewBox='0 0 ${hd} ${hd}'>`+
+                      `<image href='${pngData}' width='${hd}' height='${hd}'/></svg>`;
+          const blob = new Blob([svg], {type: 'image/svg+xml'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'qr.svg';
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+        // usar la imagen actual del canvas
+        img.src = canvas.toDataURL('image/png');
+        return;
+      }
+
+      // Si modo PNG
+      const hd = parseInt(hdSizeInput.value,10) || 2048;
+      // Creamos canvas temporal con tamaño HD
+      const temp = document.createElement('canvas');
+      temp.width = hd;
+      temp.height = hd;
+      const ctx = temp.getContext('2d');
+
+      // Dibujar fondo (blanco) y el QR escalado
+      const img = new Image();
+      img.onload = ()=>{
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0,0,hd,hd);
+        ctx.imageSmoothingEnabled = false; // importante para mantener los módulos nítidos
+        ctx.drawImage(img, 0, 0, hd, hd);
+
+        temp.toBlob((blob)=>{
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `qr_hd_${hd}x${hd}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }, 'image/png');
+      };
+      img.src = canvas.toDataURL('image/png');
+    });
+
+    // Copiar al portapapeles (imagen)
+    copyBtn.addEventListener('click', async ()=>{
+      try{
+        const blob = await new Promise(res=>canvas.toBlob(res));
+        await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+        alert('Imagen copiada al portapapeles.');
+      }catch(e){
+        console.error(e);
+        alert('No se pudo copiar: tu navegador puede no soportar la API del portapapeles para imágenes.');
+      }
+    });
+
+    // Generación automática inicial
+    updatePreviewSize();
+    qr.value = input.value;
+  </script>
+</body>
+</html>
