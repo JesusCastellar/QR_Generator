@@ -3,39 +3,142 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Generador de QR + descarga HD</title>
+  <title>Generador de QR</title>
   <style>
-    body{font-family:system-ui,Segoe UI,Roboto,Arial;line-height:1.4;padding:18px;background:#f7f7fb;color:#111}
-    .card{background:white;padding:18px;border-radius:12px;box-shadow:0 6px 20px rgba(15,15,30,0.06);max-width:760px;margin:18px auto}
-    label{display:block;margin:10px 0 6px;font-weight:600}
-    input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd}
-    .row{display:flex;gap:10px;align-items:center}
-    button{padding:10px 14px;border-radius:8px;border:0;background:#0b78ff;color:white;cursor:pointer}
-    button.secondary{background:#666}
-    .preview{display:flex;gap:20px;align-items:center;margin-top:12px}
-    canvas{background:white;border:1px solid #eee;border-radius:8px}
-    .hint{color:#666;font-size:13px;margin-top:8px}
-    .controls{display:flex;gap:8px;flex-wrap:wrap}
-  </style>
+    
+  body {
+    font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif;
+    line-height: 1.5;
+    padding: 20px;
+    background: #f7f7fb;
+    color: #333;
+  }
+
+  .card {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(15, 15, 30, 0.1);
+    max-width: 760px;
+    margin: 20px auto;
+    border-top: 5px solid #ffb81c;
+  }
+
+  label {
+    display: block;
+    margin: 12px 0 8px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  input[type="text"] {
+    width: 97%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #f1c40f; 
+    background-color: #fef6e4;
+    font-size: 14px;
+    color: #333;
+  }
+
+  .row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  button {
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 0;
+    background: #f39c12; 
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+    margin: 8px 0; 
+  }
+
+  button:hover {
+    background: #e67e22; 
+  }
+
+  button.secondary {
+    background: #f1c40f; 
+  }
+
+  button.secondary:hover {
+    background: #f39c12; 
+  }
+
+  .preview {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-top: 16px;
+  }
+
+  canvas {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px;
+  }
+
+  .hint {
+    color: #777;
+    font-size: 14px;
+    margin-top: 10px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+
+  .card-header {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f39c12;
+    margin-bottom: 20px;
+  }
+
+  .card-footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 14px;
+    color: #f39c12;
+  }
+
+  
+  .preview-container {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+</style>
+
 </head>
 <body>
   <div class="card">
     <h2>Generador de QR con descarga en HD</h2>
-    <p class="hint">Escribe un enlace, genera el QR y descárgalo en alta resolución (PNG). Puedes elegir el tamaño de salida HD.</p>
+    <p class="hint">Escribe un enlace, Clic en generar QR y descárgalo en alta resolución.</p>
 
     <label for="text">Enlace o texto</label>
     <input id="text" type="text" placeholder="https://ejemplo.com" value="https://example.com">
 
     <div class="row" style="margin-top:10px">
       <div style="flex:1">
-        <label for="size">Tamaño de vista previa (px)</label>
+        <label for="size">Tamaño de vista previa</label>
         <input id="size" type="range" min="128" max="512" value="256">
       </div>
       <div style="width:130px;text-align:right">
         <label>Modo</label>
         <select id="mode">
           <option value="png">PNG (HD)</option>
-          <option value="svg">SVG (vectorial)</option>
+          
         </select>
       </div>
     </div>
@@ -63,7 +166,24 @@
     </div>
   </div>
 
-  <!-- Librería ligera para generar QR en canvas -->
+ <script src="https://www.gstatic.com/firebasejs/9.1.2/firebase-app.js"></script>
+ <script src="https://www.gstatic.com/firebasejs/9.1.2/firebase-firestore.js"></script>
+ <script>
+  // Inicialización de Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyAYRw4zlelb9zG3N7g9-plKua9qKrUV-oc",
+    authDomain: "generadorqrcontador.firebaseapp.com",
+    projectId: "generadorqrcontador",
+    storageBucket: "generadorqrcontador.firebasestorage.app",
+    messagingSenderId: "348897089593",
+   appId: "1:348897089593:web:84ba0ebb275bd29f6015e8",
+    measurementId: "G-MC4N0B5WJN"
+  };
+
+  // Inicializa Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore(app);
+</script>
   <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
   <script>
     const input = document.getElementById('text');
@@ -77,13 +197,13 @@
     const hdSizeInput = document.getElementById('hdsize');
     const modeSelect = document.getElementById('mode');
 
-    // Creamos un objeto QRious que renderiza en el canvas
+    
     const qr = new QRious({
       element: canvas,
       value: input.value,
       size: parseInt(sizeRange.value,10),
       background: 'white',
-      level: 'H' // nivel de corrección máximo
+      level: 'H' 
     });
 
     function updatePreviewSize(){
@@ -99,11 +219,11 @@
 
     generateBtn.addEventListener('click', ()=>{
       qr.value = input.value || '';
-      // Forzar re-render (QRious actualiza automáticamente cuando cambian properties)
+      
       updatePreviewSize();
-    });
+    }); 
 
-    // Descargar PNG en alta resolución
+    
     downloadBtn.addEventListener('click', async ()=>{
       const text = input.value || '';
       if(!text){
@@ -118,15 +238,12 @@
         const hd = parseInt(hdSizeInput.value,10) || 2048;
         tmp.width = hd;
         tmp.height = hd;
-        const ctx = tmp.getContext('2d');
-        // Dibujar QR escalado
+        const ctx = tmp.getContext('2d');     
         const img = new Image();
         img.onload = ()=>{
-          // dibujamos la imagen del canvas original escalada al tamaño HD
           ctx.fillStyle = 'white';
           ctx.fillRect(0,0,hd,hd);
           ctx.drawImage(canvas, 0, 0, hd, hd);
-          // Construir SVG que embeddee el PNG resultante (vector no puro, pero escalable dentro de SVG)
           const pngData = tmp.toDataURL('image/png');
           const svg = `<?xml version="1.0" encoding="UTF-8"?>\n`+
                       `<svg xmlns='http://www.w3.org/2000/svg' width='${hd}' height='${hd}' viewBox='0 0 ${hd} ${hd}'>`+
@@ -139,25 +256,23 @@
           a.click();
           URL.revokeObjectURL(url);
         };
-        // usar la imagen actual del canvas
+        
         img.src = canvas.toDataURL('image/png');
         return;
       }
-
-      // Si modo PNG
       const hd = parseInt(hdSizeInput.value,10) || 2048;
-      // Creamos canvas temporal con tamaño HD
+      
       const temp = document.createElement('canvas');
       temp.width = hd;
       temp.height = hd;
       const ctx = temp.getContext('2d');
 
-      // Dibujar fondo (blanco) y el QR escalado
+      
       const img = new Image();
       img.onload = ()=>{
         ctx.fillStyle = 'white';
         ctx.fillRect(0,0,hd,hd);
-        ctx.imageSmoothingEnabled = false; // importante para mantener los módulos nítidos
+        ctx.imageSmoothingEnabled = false; 
         ctx.drawImage(img, 0, 0, hd, hd);
 
         temp.toBlob((blob)=>{
@@ -172,7 +287,7 @@
       img.src = canvas.toDataURL('image/png');
     });
 
-    // Copiar al portapapeles (imagen)
+    
     copyBtn.addEventListener('click', async ()=>{
       try{
         const blob = await new Promise(res=>canvas.toBlob(res));
@@ -184,7 +299,7 @@
       }
     });
 
-    // Generación automática inicial
+
     updatePreviewSize();
     qr.value = input.value;
   </script>
